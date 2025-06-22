@@ -14,7 +14,10 @@ app.use(cookieParser());
 
 // ✅ Middleware function
 export const userAuthMiddleware = (req, res, next) => {
+
   const token = req.cookies.token;
+  console.log("Checking token presence...");
+  console.log(req.cookies);
 
 // ✅ Helper to decode token payload without verifying
   function parseJwt(token) {
@@ -30,8 +33,8 @@ export const userAuthMiddleware = (req, res, next) => {
 
   if (!token) {
     console.log("Token not found. Redirecting to login.");
-    const data = { message: 'Login First!!', title: "Oops?", icon: "warning" };
-    return res.status(401).json(data);
+    return res.status(401).redirect('/index.html');
+
   }
 
   if (decodedToken?.exp < currentTime) {
@@ -41,25 +44,26 @@ export const userAuthMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.secretKey);
+    const decoded = jwt.verify(token, process.env.clientSecretKey);
     req.user = decoded;
     next();
   } catch (err) {
-    const data = { message: 'Login First!!', title: "Oops?", icon: "warning" };
-    return res.status(401).json(data);
+    return res.status(401).redirect('/index.html');
   }
 };
 
-// ✅ Export as ES6 module
 
 
 
 
 // Admin authentication middleware
 export const adminAuthMiddleware = (req, res, next) => {
+
   // Read JWT token from cookies
   const token = req.cookies.token;
   console.log("Checking token presence...");
+  console.log(req.cookies);
+  
 
   // Helper function to decode JWT payload (without verifying signature)
   function parseJwt(token) {
@@ -82,15 +86,7 @@ export const adminAuthMiddleware = (req, res, next) => {
 
   // If decoding fails or token is expired, send error response
   if (!decodedToken || decodedToken.exp < currentTime) {
-    // const data = {
-    //   message: 'Session Expired. Login Again!',
-    //   title: "Oops?",
-    //   icon: "warning"
-    // };
-    return res.redirect('/admin?expired=true');
-
-    console.log(data);
-    return res.status(500).json(data);
+    return res.redirect('/index.html');
   }
 
   try {
@@ -104,7 +100,7 @@ export const adminAuthMiddleware = (req, res, next) => {
     next();
   } catch (err) {
     // If token verification fails, redirect to login
-    console.log("Token verification failed:", err);
-    return res.redirect('/admin');
+    // console.log("Token verification failed:", err);
+    return res.redirect('/index.html');
   }
 };

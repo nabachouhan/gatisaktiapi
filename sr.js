@@ -6,17 +6,24 @@ import jwt from 'jsonwebtoken';
 import { Pool } from 'pg';
 import path from 'path';
 import fs from 'fs/promises';
-import cors from 'cors';
 import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 import { userAuthMiddleware, adminAuthMiddleware } from './src/middleware/auth.js';
 import './src/db/schema.js';
-import { log } from 'console';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+const app = express();
+
+app.use(cors({
+  origin: 'http://localhost:4000', // frontend origin
+  credentials: true
+}));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, 'public')));
 
-const app = express();
+app.use(cookieParser()); 
 const port = 4000;
 
 // PostgreSQL configuration
@@ -28,8 +35,18 @@ const pool = new Pool({
   port: process.env.db_port,
 });
 
+// Test database connection
+pool.connect((err, client, release) => {
+  if (err) {
+    console.error('Database connection error:', err.stack);
+    return;
+  }
+  console.log('Database connected successfully');
+  release();
+});
+
 // Middleware
-app.use(cors());
+// app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
@@ -40,12 +57,10 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 1024 * 1024 * 1024 } // 1 GB limit 
-});
+const upload = multer({ storage });
 
 // JWT secret
+const JWT_SECRET = process.env.secret_key;
 
 // Ensure uploads directory exists
 const ensureUploadsDir = async () => {
@@ -57,52 +72,87 @@ const ensureUploadsDir = async () => {
 };
 ensureUploadsDir();
 
-// Admin login
+// // Admin login
+// app.post('/admin/login', async (req, res) => {
+//   try {
+//   const {email, password } = req.body;
+//     const result = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
+//     const admin = result.rows[0];
+//      console.log(admin);
+//         console.log(!admin);
+//             console.log(email!=admin.email);
+//         console.log(!(await bcrypt.compare(password, admin.password)));
+//     if (!admin || email!=admin.email || !(await bcrypt.compare(password, admin.password))) {
+//       return res.status(401).json({ error: 'Invalid credentials' });
+//     }
+//     const token = jwt.sign({ id: admin.email, role: admin.role }, process.env.adminSecretKey, { expiresIn: '10m' });
+//     // res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+//     res.cookie('token', token, {
+//   httpOnly: true,
+//   secure: process.env.NODE_ENV === 'production', // only true in production
+//   sameSite: 'lax' // or 'strict', depending on your use case
+// });
+
+
+//     // res.json({ token });
+//   } catch (err) {
+//     console.error('Error in /admin/login:', err.stack);
+//     res.status(500).json({ error: 'Server error', details: err.message });
+//   }
+// });
+
+
 app.post('/admin/login', async (req, res) => {
-  const {email, username, password } = req.body;
   try {
+    const { email, password } = req.body;
     const result = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
     const admin = result.rows[0];
-    console.log(admin);
-    console.log(!admin);
-        console.log(email!=admin.email);
-    console.log(!(await bcrypt.compare(password, admin.password)));
-
-    
-    if (!admin || email!=admin.email || !(await bcrypt.compare(password, admin.password))) {
-      return res.status(401).json({ error: 'Invalid credentialfs' });
+    if (!admin || email !== admin.email || !(await bcrypt.compare(password, admin.password))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: admin.email, role: admin.role }, process.env.adminSecretKey, { expiresIn: '10m' });
+    const token = jwt.sign({ email: admin.email, role: admin.role }, process.env.adminSecretKey, { expiresIn: '10m' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    // res.json({ token }); // Add this to return the token
     console.log(token);
-    
-    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
-  } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    const data = { message: 'Login done!!', title: "Oops?", icon: "warning", redirect:"/admin.html" };
+    res.status(200).json(data);  } catch (err) {
+    console.error('Error in /admin/login:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
 // Client login
 app.post('/client/login', async (req, res) => {
-  const { email,username, password } = req.body;
   try {
-    const result = await pool.query('SELECT * FROM clients WHERE username = $1', [username]);
+  const {email, password } = req.body;
+    const result = await pool.query('SELECT * FROM clients WHERE email = $1', [email]);
     const client = result.rows[0];
     if (!client || email!=client.email || !(await bcrypt.compare(password, client.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
-    const token = jwt.sign({ id: client.email, role: client.role }, process.env.secret_key, { expiresIn: '10m' });
-    res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
+    const token = jwt.sign({ email: client.email, role: client.role }, process.env.clientSecretKey, { expiresIn: '10m' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    // res.json({ token }); // Add this to return the token
+    console.log(token);
+    const data = { message: 'Login done!!', title: "Oops?", icon: "warning", redirect:"/client.html" };
+    res.status(200).json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /admin/login:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
 // Admin: Upload or update ZIP file
 app.post('/admin/upload', adminAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
-    console.log(req.user);
-    
     if (req.user.role !== 'admin') {
       console.log('Access denied: User is not admin', req.user);
       return res.status(403).json({ error: 'Access denied' });
@@ -128,7 +178,6 @@ app.post('/admin/upload', adminAuthMiddleware, upload.single('file'), async (req
 });
 
 // Admin: List files with pagination and search
-// / Admin: List files with pagination and search
 app.get('/admin/files', adminAuthMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
@@ -160,49 +209,64 @@ app.get('/admin/files', adminAuthMiddleware, async (req, res) => {
   }
 });
 
-
 // Admin: Replace file
 app.put('/admin/replace/:id', adminAuthMiddleware, upload.single('file'), async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
   try {
+    if (req.user.role !== 'admin') {
+      console.log('Access denied: User is not admin', req.user);
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
     const fileId = req.params.id;
     const { filename, path: filePath, size } = req.file;
     const oldFile = await pool.query('SELECT filepath FROM files WHERE id = $1', [fileId]);
     if (!oldFile.rows[0]) return res.status(404).json({ error: 'File not found' });
 
     // Delete old file
-    await fs.unlink(oldFile.rows[0].filepath);
+    try {
+      await fs.unlink(oldFile.rows[0].filepath);
+    } catch (err) {
+      console.warn('Could not delete old file:', err.message);
+    }
 
-    // Update file info
     const result = await pool.query(
       'UPDATE files SET filename = $1, filepath = $2, size = $3, upload_date = NOW() WHERE id = $4 RETURNING *',
       [filename, filePath, size, fileId]
     );
     res.json({ message: 'File replaced successfully', file: result.rows[0] });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /admin/replace:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
 // Admin: Delete file
 app.delete('/admin/delete/:id', adminAuthMiddleware, async (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Access denied' });
   try {
+    if (req.user.role !== 'admin') {
+      console.log('Access denied: User is not admin', req.user);
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const fileId = req.params.id;
     const file = await pool.query('SELECT filepath FROM files WHERE id = $1', [fileId]);
     if (!file.rows[0]) return res.status(404).json({ error: 'File not found' });
 
-    await fs.unlink(file.rows[0].filepath);
+    try {
+      await fs.unlink(file.rows[0].filepath);
+    } catch (err) {
+      console.warn('Could not delete file:', err.message);
+    }
     await pool.query('DELETE FROM files WHERE id = $1', [fileId]);
     res.json({ message: 'File deleted successfully' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /admin/delete:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
-
-// Client: List available files
 
 // Admin: Cleanup unreferenced files
 app.post('/admin/cleanup', adminAuthMiddleware, async (req, res) => {
@@ -271,29 +335,61 @@ app.get('/client/files', userAuthMiddleware, async (req, res) => {
 
 // Client: Download file
 app.get('/client/download/:id', userAuthMiddleware, async (req, res) => {
-  if (req.user.role !== 'client') return res.status(403).json({ error: 'Access denied' });
   try {
+    if (req.user.role !== 'client') {
+      console.log('Access denied: User is not client', req.user);
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const result = await pool.query('SELECT filepath FROM files WHERE id = $1', [req.params.id]);
     const file = result.rows[0];
     if (!file) return res.status(404).json({ error: 'File not found' });
     res.download(file.filepath);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Error in /client/download:', err.stack);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
+
+// logout
+app.post('/logout', userAuthMiddleware, (req, res) => {
+console.log("logout");
+
+    try {
+        // Clear the cookie containing the token
+        res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+
+        // Send a success response
+        const data = { message: 'Logout successful', title: "Logged Out", icon: "success", redirect: '\\' };
+        console.log(data)
+        return res.json(data);
+    } catch (error) {
+        console.error(error);
+        const data = { message: 'Logout failed', title: "Error", icon: "error" };
+
+        return res.status(500).json(data);
+    }
+
+});
+
+
 
 // Serve HTML pages
 app.get('/index.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-app.get('/admin.html', (req, res) => {
+app.get('/admin.html', adminAuthMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
-app.get('/client.html', (req, res) => {
+app.get('/client.html', userAuthMiddleware, (req, res) => {
   res.sendFile(path.join(__dirname, 'client.html'));
 });
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Catch-all for 404 errors
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 app.listen(port, () => {
