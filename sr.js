@@ -134,11 +134,12 @@ app.post('/admin/upload', adminAuthMiddleware, upload.single('file'), async (req
 
     const { filename, path: filePath, size } = req.file;
     const fileTitle = req.body.fileTitle || filename;
+    const department = req.body.department  || ASSAC;
     console.log('Uploading file:', { filename, fileTitle, filePath, size });
 
     const result = await pool.query(
-      'INSERT INTO files (filename, filetitle, filepath, size, upload_date) VALUES ($1, $2, $3, $4, NOW()) ON CONFLICT (filename) DO UPDATE SET filetitle = $2, filepath = $3, size = $4, upload_date = NOW() RETURNING *',
-      [filename, fileTitle, filePath, size]
+      'INSERT INTO files (department, filename, filetitle, filepath, size, upload_date) VALUES ($1, $2, $3, $4, $5, NOW()) ON CONFLICT (filename) DO UPDATE SET filetitle = $2, filepath = $3, size = $4, upload_date = NOW() RETURNING *',
+      [department, filename, fileTitle, filePath, size]
     );
     res.json({ message: 'File uploaded successfully', file: result.rows[0] });
   } catch (err) {
@@ -169,7 +170,7 @@ app.get('/admin/files', adminAuthMiddleware, async (req, res) => {
     const totalPages = Math.ceil(totalFiles / size);
 
     const result = await pool.query(
-      'SELECT id, filename, filetitle, size, upload_date FROM files WHERE filename ILIKE $1 OR filetitle ILIKE $1 ORDER BY upload_date DESC LIMIT $2 OFFSET $3',
+      'SELECT id, department, filename, filetitle, size, upload_date, status FROM files WHERE filename ILIKE $1 OR filetitle ILIKE $1 ORDER BY upload_date DESC LIMIT $2 OFFSET $3',
       [searchQuery, size, offset]
     );
     res.json({ files: result.rows, currentPage: page, totalPages });
@@ -204,9 +205,11 @@ app.put('/admin/replace/:id', adminAuthMiddleware, upload.single('file'), async 
     }
 
     const result = await pool.query(
-      'UPDATE files SET filename = $1, filepath = $2, size = $3, upload_date = NOW() WHERE id = $4 RETURNING *',
-      [filename, filePath, size, fileId]
+      'UPDATE files SET filename = $1, filepath = $2, size = $3, upload_date = NOW(), status = $4 WHERE id = $5 RETURNING *',
+      [filename, filePath, size, 'Update', fileId]
     );
+     await pool.query(`UPDATE files SET status='Update' WHERE id = $1`, [req.params.id]);
+
     res.json({ message: 'File replaced successfully', file: result.rows[0] });
   } catch (err) {
     console.error('Error in /admin/replace:', err.stack);
@@ -314,6 +317,7 @@ app.get('/client/download/:id', userAuthMiddleware, async (req, res) => {
     const file = result.rows[0];
     if (!file) return res.status(404).json({ error: 'File not found' });
     res.download(file.filepath);
+    await pool.query(`UPDATE files SET status='Downloaded' WHERE id = $1`, [req.params.id]);
   } catch (err) {
     console.error('Error in /client/download:', err.stack);
     res.status(500).json({ error: 'Server error', details: err.message });

@@ -46,11 +46,13 @@
           <table class="table table-striped table-bordered">
             <thead>
               <tr>
+                <th>Department</th>
                 <th>Title</th>
                 <th>Filename</th>
                 <th>Size (KB)</th>
                 <th>Upload Date</th>
                 <th>Actions</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody id="admin-file-table"></tbody>
@@ -93,9 +95,10 @@
       const formData = new FormData();
       const fileInput = document.getElementById('file-upload');
       const fileTitle = document.getElementById('file-title').value;
+      const department = document.getElementById('department').value;
       formData.append('file', fileInput.files[0]);
       formData.append('fileTitle', fileTitle);
-
+      formData.append('department', department);
       try {
         const response = await fetch('/admin/upload', {
           method: 'POST',
@@ -136,6 +139,7 @@
         data.files.forEach(file => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
+            <td>${file.department}</td>
             <td>${file.filetitle}</td>
             <td>${file.filename}</td>
             <td>${(file.size / 1024).toFixed(2)}</td>
@@ -143,7 +147,9 @@
             <td>
               <button onclick="replaceFile(${file.id})" class="btn btn-warning btn-sm me-1">Replace</button>
               <button onclick="deleteFile(${file.id})" class="btn btn-danger btn-sm">Delete</button>
-            </td>`;
+            </td>
+            <td>${file.status}</td>
+             `;
           fileTable.appendChild(tr);
         });
         document.getElementById('admin-page-info').textContent = `Page ${data.currentPage} of ${data.totalPages}`;

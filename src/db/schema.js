@@ -21,11 +21,13 @@ async function createTables() {
       
       CREATE TABLE IF NOT EXISTS files (
         id SERIAL PRIMARY KEY,
+        department VARCHAR(255) NOT NULL,
         filename VARCHAR(255) NOT NULL UNIQUE, 
         filetitle VARCHAR(255) NOT NULL,
         filepath VARCHAR(255) NOT NULL,
         size BIGINT NOT NULL,
-        upload_date TIMESTAMP NOT NULL
+        upload_date TIMESTAMP NOT NULL,
+        status VARCHAR(15) DEFAULT  'new'
       );
     `);
     console.log("Tables created successfully.");
