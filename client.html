@@ -49,27 +49,7 @@
     const tokenKey = 'authToken';
     let clientCurrentPage = 1;
     const pageSize = 5;
-
-    // Check if user is authorized
-    // const token = localStorage.getItem(tokenKey);
-    // if (!token) {
-    //   window.location.href = '/index.html';
-    // } else {
-    //   try {
-    //     const payload = JSON.parse(atob(token.split('.')[1]));
-    //     if (payload.role !== 'client') {
-    //       localStorage.removeItem(tokenKey);
-    //       window.location.href = '/index.html';
-    //     } else {
-          fetchClientFiles();
-    //     }
-    //   } catch (err) {
-    //     console.error('Invalid token:', err);
-    //     localStorage.removeItem(tokenKey);
-    //     window.location.href = '/index.html';
-    //   }
-    // }
-
+      fetchClientFiles();
     // Fetch files for client
     async function fetchClientFiles(search = '') {
       try {
@@ -146,7 +126,8 @@
                             /* Read more about isConfirmed, isDenied below */
                             if (result.isConfirmed) {
                                 if (data.redirect != undefined) {
-                                    window.location.href = data.redirect; // Replace with your desired URL
+                                    localStorage.removeItem('authToken'); // Clear token
+                                    window.location.href = data.redirect; 
                                 }
                             }
                         });
@@ -159,7 +140,6 @@
      // Attach event listeners to each form, passing the appropriate endpoint URL
         document.getElementById('logout-client').addEventListener('click', function (e) {
             handleAdminLogout(e, '/clientlogout');
-                  window.location.href = '/index.html';
 
         });
   </script>

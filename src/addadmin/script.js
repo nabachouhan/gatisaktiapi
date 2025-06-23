@@ -31,7 +31,7 @@ const addClient = async () => {
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     await pool.query(
-      'INSERT INTO clients (username, email, password) VALUES ($1, $2, $3)',
+      'INSERT INTO admins (username, email, password) VALUES ($1, $2, $3)',
       [username, email, hashedPassword]
     );
     console.log(`Admin user ${username} added successfully`);
@@ -43,5 +43,5 @@ const addClient = async () => {
 };
 
 
-// addAdmin();
-addClient()
+addAdmin();
+// addClient()

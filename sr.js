@@ -59,9 +59,6 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// JWT secret
-const JWT_SECRET = process.env.secret_key;
-
 // Ensure uploads directory exists
 const ensureUploadsDir = async () => {
   try {
@@ -72,43 +69,15 @@ const ensureUploadsDir = async () => {
 };
 ensureUploadsDir();
 
-// // Admin login
-// app.post('/admin/login', async (req, res) => {
-//   try {
-//   const {email, password } = req.body;
-//     const result = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
-//     const admin = result.rows[0];
-//      console.log(admin);
-//         console.log(!admin);
-//             console.log(email!=admin.email);
-//         console.log(!(await bcrypt.compare(password, admin.password)));
-//     if (!admin || email!=admin.email || !(await bcrypt.compare(password, admin.password))) {
-//       return res.status(401).json({ error: 'Invalid credentials' });
-//     }
-//     const token = jwt.sign({ id: admin.email, role: admin.role }, process.env.adminSecretKey, { expiresIn: '10m' });
-//     // res.cookie('token', token, { httpOnly: true, secure: process.env.NODE_ENV === 'production' })
-//     res.cookie('token', token, {
-//   httpOnly: true,
-//   secure: process.env.NODE_ENV === 'production', // only true in production
-//   sameSite: 'lax' // or 'strict', depending on your use case
-// });
-
-
-//     // res.json({ token });
-//   } catch (err) {
-//     console.error('Error in /admin/login:', err.stack);
-//     res.status(500).json({ error: 'Server error', details: err.message });
-//   }
-// });
-
-
+// admin login
 app.post('/admin/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const result = await pool.query('SELECT * FROM admins WHERE email = $1', [email]);
     const admin = result.rows[0];
     if (!admin || email !== admin.email || !(await bcrypt.compare(password, admin.password))) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      const data = { message: 'Invalid Credentials!!', title: "Oops?", icon: "warning", redirect:"/admin.html" };
+      return res.status(401).json(data);
     }
     const token = jwt.sign({ email: admin.email, role: admin.role }, process.env.adminSecretKey, { expiresIn: '10m' });
     res.cookie('token', token, {
@@ -118,7 +87,7 @@ app.post('/admin/login', async (req, res) => {
     });
     // res.json({ token }); // Add this to return the token
     console.log(token);
-    const data = { message: 'Login done!!', title: "Oops?", icon: "warning", redirect:"/admin.html" };
+    const data = { message: 'Proceed Login!!', title: "", icon: "warning", redirect:"/admin.html" };
     res.status(200).json(data);  } catch (err) {
     console.error('Error in /admin/login:', err.stack);
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -132,7 +101,8 @@ app.post('/client/login', async (req, res) => {
     const result = await pool.query('SELECT * FROM clients WHERE email = $1', [email]);
     const client = result.rows[0];
     if (!client || email!=client.email || !(await bcrypt.compare(password, client.password))) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      const data = { message: 'Invalid Credentials!!', title: "Oops?", icon: "warning", redirect:"/admin.html" };
+      return res.status(401).json(data);
     }
     const token = jwt.sign({ email: client.email, role: client.role }, process.env.clientSecretKey, { expiresIn: '10m' });
     res.cookie('token', token, {
@@ -142,7 +112,7 @@ app.post('/client/login', async (req, res) => {
     });
     // res.json({ token }); // Add this to return the token
     console.log(token);
-    const data = { message: 'Login done!!', title: "Oops?", icon: "warning", redirect:"/client.html" };
+    const data = { message: 'Proceed Login!!', title: "", icon: "warning", redirect:"/client.html" };
     res.status(200).json(data);
   } catch (err) {
     console.error('Error in /admin/login:', err.stack);
@@ -359,7 +329,7 @@ console.log("logout");
         res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
 
         // Send a success response
-        const data = { message: 'Logout successful', title: "Logged Out", icon: "success", redirect: '\\' };
+        const data = { message: 'Logout successful', title: "Logged Out", icon: "success", redirect: '\\index.html' };
         console.log(data)
         return res.json(data);
     } catch (error) {
