@@ -351,7 +351,7 @@ app.get('/client/download/:id', userAuthMiddleware, async (req, res) => {
 });
 
 // logout
-app.post('/logout', userAuthMiddleware, (req, res) => {
+app.post('/clientlogout', userAuthMiddleware, (req, res) => {
 console.log("logout");
 
     try {
@@ -371,7 +371,23 @@ console.log("logout");
 
 });
 
+app.post('/adminlogout', adminAuthMiddleware, (req, res) => {
+    try {
+        // Clear the cookie containing the token
+        res.clearCookie('token', { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
 
+        // Send a success response
+        const data = { message: 'Logout successful', title: "Logged Out", icon: "success", redirect: '\\index.html' };
+        console.log(data)
+        return res.json(data);
+    } catch (error) {
+        console.error(error);
+        const data = { message: 'Logout failed', title: "Error", icon: "error" };
+
+        return res.status(500).json(data);
+    }
+
+});
 
 // Serve HTML pages
 app.get('/index.html', (req, res) => {

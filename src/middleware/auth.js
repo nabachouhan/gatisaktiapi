@@ -77,7 +77,7 @@ export const adminAuthMiddleware = (req, res, next) => {
   // If token is missing, redirect to login
   if (!token) {
     console.log("Token not found. Redirecting to login.");
-    return res.redirect('/admin');
+    return res.redirect('/index.html');
   }
 
   // Decode token to get expiration time

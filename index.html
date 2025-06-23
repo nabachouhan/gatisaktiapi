@@ -88,16 +88,7 @@
 
     // Check if already logged in
     const token = localStorage.getItem(tokenKey);
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        window.location.href = payload.role === 'admin' ? '/admin.html' : '/client.html';
-      } catch (err) {
-        console.error('Invalid token:', err);
-        localStorage.removeItem(tokenKey);
-      }
-    }
-
+    
     // Login form submission
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
