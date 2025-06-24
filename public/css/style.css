@@ -12,3 +12,13 @@ header, footer {
       left: 50%;
       transform: translateX(-50%);
     }
+
+    .row-downloaded {
+  background-color: #d4edda !important;
+}
+.row-update {
+  background-color: #fff3cd !important;
+}
+.row-new {
+  background-color: #f8d7da !important;
+}

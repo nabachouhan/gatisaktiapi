@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <!-- SweetAlert2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=home" />
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
   <div class="card shadow-lg p-4 w-100" style="max-width: 960px;">
@@ -22,15 +23,24 @@
           <button id="client-next-page" class="btn btn-secondary">Next</button>
         </div>
       </div>
+      <div class="d-flex justify-content-start mb-3" id="status-filter-buttons">
+  <button class="btn btn-outline-danger me-2" data-status="new">New</button>
+  <button class="btn btn-outline-warning me-2" data-status="update">Updated</button>
+  <button class="btn btn-outline-success me-2" data-status="downloaded">Downloaded</button>
+  <button class="btn btn-outline-secondary" data-status="all">All</button>
+</div>
       <div class="table-responsive">
         <table class="table table-striped table-bordered">
           <thead>
             <tr>
+              <th>ID</th>
               <th>Title</th>
               <th>Filename</th>
               <th>Size (KB)</th>
               <th>Upload Date</th>
+              <th>Addl Info</th>
               <th>Action</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="client-file-table"></tbody>
@@ -49,45 +59,90 @@
     const tokenKey = 'authToken';
     let clientCurrentPage = 1;
     const pageSize = 5;
+    let clientStatusFilter = 'all'; // default
+
       fetchClientFiles();
-    // Fetch files for client
-    async function fetchClientFiles(search = '') {
-      try {
-        const response = await fetch(`/client/files?page=${clientCurrentPage}&size=${pageSize}&search=${encodeURIComponent(search)}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` }
-        });
-        const data = await response.json();
-        if (data.error) throw new Error(data.error);
-        const fileTable = document.getElementById('client-file-table');
-        fileTable.innerHTML = '';
-        console.log(data);
-        
-        data.files.forEach(file => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${file.filetitle}</td>
-            <td>${file.filename}</td>
-            <td>${(file.size / 1024).toFixed(2)}</td>
-            <td>${new Date(file.upload_date).toLocaleString()}</td>
-            <td>
-              <a href="/client/download/${file.id}" class="btn btn-primary btn-sm">Download</a>
-            </td>`;
-          fileTable.appendChild(tr);
-        });
-        document.getElementById('client-page-info').textContent = `Page ${data.currentPage} of ${data.totalPages}`;
-        document.getElementById('client-prev-page').disabled = data.currentPage === 1;
-        document.getElementById('client-next-page').disabled = data.currentPage === data.totalPages;
-      } catch (err) {
-        console.error('Fetch client files error:', err);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to fetch files. Please try again.',
-        });
-      }
+
+
+async function fetchClientFiles(search = '') {
+  try {
+    const queryParams = new URLSearchParams({
+      page: clientCurrentPage,
+      size: pageSize,
+      search: search,
+    });
+
+    if (clientStatusFilter !== 'all') {
+      queryParams.append('status', clientStatusFilter);
     }
 
-    // Client search and pagination
+    const response = await fetch(`/client/files?${queryParams.toString()}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` }
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    const fileTable = document.getElementById('client-file-table');
+    fileTable.innerHTML = '';
+
+    data.files.forEach(file => {
+      const tr = document.createElement('tr');
+      if (file.status === 'downloaded') {
+        tr.style.backgroundColor = '#d4edda';
+      } else if (file.status === 'update') {
+        tr.style.backgroundColor = '#fff3cd';
+      } else if (file.status === 'new') {
+        tr.style.backgroundColor = '#f8d7da';
+      }
+
+      tr.innerHTML = `
+        <td>${file.id}</td>
+        <td>${file.filetitle}</td>
+        <td>${file.filename}</td>
+        <td>${(file.size / 1024).toFixed(2)}</td>
+        <td>${new Date(file.upload_date).toLocaleString()}</td>
+        <td>
+          <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailsModal-${file.id}">View Details</button>
+          <div class="modal fade" id="detailsModal-${file.id}" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Request Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p><strong>Department:</strong> ${file.department}</p>
+                <p><strong>Description:</strong> ${file.description}</p>
+              </div>
+            </div></div>
+          </div>
+        </td>
+        <td><a href="/client/download/${file.id}" class="btn btn-primary btn-sm">Download</a></td>
+        <td>${file.status}</td>
+      `;
+      fileTable.appendChild(tr);
+    });
+
+    document.getElementById('client-page-info').textContent = `Page ${data.currentPage} of ${data.totalPages}`;
+    document.getElementById('client-prev-page').disabled = data.currentPage === 1;
+    document.getElementById('client-next-page').disabled = data.currentPage === data.totalPages;
+
+  } catch (err) {
+    console.error('Fetch client files error:', err);
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to fetch files. Please try again.' });
+  }
+}
+
+document.querySelectorAll('#status-filter-buttons button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    clientStatusFilter = btn.getAttribute('data-status');
+    clientCurrentPage = 1;
+    fetchClientFiles(document.getElementById('client-search-input').value);
+  });
+});
+  
+
+// Client search and pagination
     document.getElementById('client-search-input').addEventListener('input', (e) => {
       clientCurrentPage = 1;
       fetchClientFiles(e.target.value);

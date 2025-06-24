@@ -17,7 +17,7 @@ export const userAuthMiddleware = (req, res, next) => {
 
   const token = req.cookies.token;
   console.log("Checking token presence...");
-  console.log(req.cookies);
+  // console.log(req.cookies);
 
 // ✅ Helper to decode token payload without verifying
   function parseJwt(token) {
@@ -38,9 +38,7 @@ export const userAuthMiddleware = (req, res, next) => {
   }
 
   if (decodedToken?.exp < currentTime) {
-    const data = { message: 'Session Expired Login Again!', title: "Oops?", icon: "warning" };
-    console.log(data);
-    return res.status(401).json(data);
+        return res.status(401).redirect('/index.html');
   }
 
   try {

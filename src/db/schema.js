@@ -25,6 +25,7 @@ async function createTables() {
         filename VARCHAR(255) NOT NULL UNIQUE, 
         filetitle VARCHAR(255) NOT NULL,
         filepath VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
         size BIGINT NOT NULL,
         upload_date TIMESTAMP NOT NULL,
         status VARCHAR(15) DEFAULT  'new'
