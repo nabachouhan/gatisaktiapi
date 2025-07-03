@@ -11,20 +11,15 @@ import { fileURLToPath } from 'url';
 import { userAuthMiddleware, adminAuthMiddleware } from './src/middleware/auth.js';
 import './src/db/schema.js';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
 const app = express();
 
-app.use(cors({
-  origin: 'http://localhost:4000', // frontend origin
-  credentials: true
-}));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cookieParser()); 
-const port = 4000;
+const port = 3000;
 
 // PostgreSQL configuration
 const pool = new Pool({
@@ -46,7 +41,6 @@ pool.connect((err, client, release) => {
 });
 
 // Middleware
-// app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
@@ -57,7 +51,12 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 2 * 1024 * 1024 * 1024 // 2GB in bytes
+  }
+ });
 
 // Ensure uploads directory exists
 const ensureUploadsDir = async () => {
