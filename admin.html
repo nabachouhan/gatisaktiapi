@@ -168,7 +168,7 @@
                           <div class="modal-dialog">
                             <div class="modal-content">
                               <div class="modal-header">
-                                <h5 class="modal-title" id="detailsModalLabel-${file.id}">Request Details</h5>
+                                <h5 class="modal-title" id="detailsModalLabel-${file.id}"> Details</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div class="modal-body">
@@ -202,7 +202,7 @@
     async function replaceFile(fileId) {
       const input = document.createElement('input');
       input.type = 'file';
-      input.accept = '.zip';
+      input.accept = '.geojson';
       input.onchange = async () => {
         const formData = new FormData();
         formData.append('file', input.files[0]);

@@ -5,14 +5,14 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import { Pool } from 'pg';
 import path from 'path';
-import fs from 'fs';
 import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 import { userAuthMiddleware, adminAuthMiddleware } from './src/middleware/auth.js';
 import './src/db/schema.js';
 import cookieParser from 'cookie-parser';
 const app = express();
-
+import { promises as fs } from 'fs'; // For async methods
+import fsSync from 'fs'; 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,15 +58,15 @@ const upload = multer({
   }
  });
 
-// // Ensure uploads directory exists
-// const ensureUploadsDir = async () => {
-//   try {
-//     await fs.access('./uploads');
-//   } catch {
-//     await fs.mkdir('./uploads');
-//   }
-// };
-// ensureUploadsDir();
+// Ensure uploads directory exists
+const ensureUploadsDir = async () => {
+  try {
+    await fs.access('./uploads');
+  } catch {
+    await fs.mkdir('./uploads');
+  }
+};
+ensureUploadsDir();
 
 // admin login
 app.post('/admin/login', async (req, res) => {
@@ -346,7 +346,7 @@ app.get('/client/view/:id', userAuthMiddleware, async (req, res) => {
     const file = result.rows[0];
     if (!file) return res.status(404).json({ error: 'File not found' });
 
-    const fileData = fs.readFileSync(file.filepath, 'utf8');
+    const fileData = fsSync.readFileSync(file.filepath, 'utf8');
     res.setHeader('Content-Type', 'application/geo+json');
     res.send(fileData); // sends raw GeoJSON text
   } catch (err) {
