@@ -16,10 +16,14 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
+    "geojson-stream": "^0.1.0",
     "gitignore": "^0.7.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.1",
     "path": "^0.12.7",
-    "pg": "^8.16.2"
+    "pg": "^8.16.2",
+    "shapefile": "^0.6.6",
+    "shp-write": "^0.3.2",
+    "tokml": "^0.4.0"
   }
 }

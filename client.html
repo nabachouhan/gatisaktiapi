@@ -40,6 +40,8 @@
               <th>Upload Date</th>
               <th>Addl Info</th>
               <th>Action</th>
+                            <th>Geojson</th>
+
               <th>Status</th>
             </tr>
           </thead>
@@ -103,7 +105,7 @@ async function fetchClientFiles(search = '') {
         <td>${(file.size / 1024).toFixed(2)}</td>
         <td>${new Date(file.upload_date).toLocaleString()}</td>
         <td>
-          <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailsModal-${file.id}">View Details</button>
+          <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detailsModal-${file.id}">Info</button>
           <div class="modal fade" id="detailsModal-${file.id}" tabindex="-1">
             <div class="modal-dialog"><div class="modal-content">
               <div class="modal-header">
@@ -118,6 +120,9 @@ async function fetchClientFiles(search = '') {
           </div>
         </td>
         <td><a href="/client/download/${file.id}" class="btn btn-primary btn-sm">Download</a></td>
+         <td>
+  <a href="/client/view/${file.id}" target="_blank" class="btn btn-sm btn-outline-success">GeoJSON</a>
+            </td>
         <td>${file.status}</td>
       `;
       fileTable.appendChild(tr);

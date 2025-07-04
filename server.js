@@ -5,7 +5,7 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import { Pool } from 'pg';
 import path from 'path';
-import fs from 'fs/promises';
+import fs from 'fs';
 import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 import { userAuthMiddleware, adminAuthMiddleware } from './src/middleware/auth.js';
@@ -58,15 +58,15 @@ const upload = multer({
   }
  });
 
-// Ensure uploads directory exists
-const ensureUploadsDir = async () => {
-  try {
-    await fs.access('./uploads');
-  } catch {
-    await fs.mkdir('./uploads');
-  }
-};
-ensureUploadsDir();
+// // Ensure uploads directory exists
+// const ensureUploadsDir = async () => {
+//   try {
+//     await fs.access('./uploads');
+//   } catch {
+//     await fs.mkdir('./uploads');
+//   }
+// };
+// ensureUploadsDir();
 
 // admin login
 app.post('/admin/login', async (req, res) => {
@@ -336,6 +336,22 @@ app.get('/client/files', userAuthMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Error in /client/files:', err.stack);
     res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+// View (returns GeoJSON content)
+app.get('/client/view/:id', userAuthMiddleware, async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    const result = await pool.query('SELECT * FROM files WHERE id = $1', [id]);
+    const file = result.rows[0];
+    if (!file) return res.status(404).json({ error: 'File not found' });
+
+    const fileData = fs.readFileSync(file.filepath, 'utf8');
+    res.setHeader('Content-Type', 'application/geo+json');
+    res.send(fileData); // sends raw GeoJSON text
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error reading GeoJSON' });
   }
 });
 
