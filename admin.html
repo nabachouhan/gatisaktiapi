@@ -114,7 +114,7 @@
       try {
         const response = await fetch('/admin/upload', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` },
+          credentials: 'include',          
           body: formData
         });
         const data = await response.json();
@@ -142,7 +142,7 @@
     async function fetchAdminFiles(search = '') {
       try {
         const response = await fetch(`/admin/files?page=${adminCurrentPage}&size=${pageSize}&search=${encodeURIComponent(search)}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` }
+        credentials: 'include'
         });
         const data = await response.json();
         if (data.error) throw new Error(data.error);
@@ -209,7 +209,7 @@
         try {
           const response = await fetch(`/admin/replace/${fileId}`, {
             method: 'PUT',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` },
+            credentials: 'include',
             body: formData
           });
           const data = await response.json();
@@ -247,7 +247,7 @@
         try {
           const response = await fetch(`/admin/delete/${fileId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem(tokenKey)}` }
+            credentials: 'include',
           });
           const data = await response.json();
           Swal.fire({
